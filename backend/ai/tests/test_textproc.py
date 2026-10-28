@@ -19,10 +19,16 @@ def test_clean_text_rejoins_hyphenated_and_wrapped_lines():
 
 
 def test_strip_repeated_headers_and_page_numbers():
-    pages = [f"Université Hassan II\nContenu {i}\n{i}" for i in range(1, 7)]
+    topics = ["Les tables", "Les clés", "Le SQL", "Les index", "Les vues", "Les jointures"]
+    pages = [f"Université Hassan II – 2025/2026\n{t} en détail.\n{i}" for i, t in enumerate(topics, 1)]
+    pages[3] = pages[3].replace("2025/2026", "2026/2027")  # footers vary only by numbers
     cleaned = strip_repeated_lines(pages)
     assert all("Université" not in p for p in cleaned)
-    assert cleaned[2] == "Contenu 3"
+    assert cleaned[2] == "Le SQL en détail."
+
+
+def test_slide_markers_are_removed_but_sentence_kept():
+    assert clean_text("Diapo 4 : La cellule est l’unité du vivant.") == "La cellule est l’unité du vivant."
 
 
 def test_language_detection(course_text):
@@ -71,3 +77,13 @@ def test_parse_json_loose_raises():
 def test_headings_stay_separate_from_body():
     raw = "Chapitre 2 — La normalisation\nLa normalisation réduit\nla redondance."
     assert clean_text(raw) == "Chapitre 2 — La normalisation\n\nLa normalisation réduit la redondance."
+
+
+def test_table_of_contents_and_narration_are_not_key_points():
+    text = ("Chapitre 1. Définition de la cellule ........................ 6\n\n"
+            "Nous verrons ensuite la composition du cytosol en détail dans ce chapitre. "
+            "Le cytosol est la phase liquide où baignent les organites de la cellule. "
+            "Le cation principal du cytosol est le potassium, le sodium reste extracellulaire.")
+    assert "....." not in clean_text(text)
+    ranked = rank_sentences(clean_text(text), limit=5)
+    assert ranked and all("Nous" not in r and "Chapitre" not in r for r in ranked)

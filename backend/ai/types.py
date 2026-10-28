@@ -12,6 +12,7 @@ class Page:
 class ExtractedDocument:
     pages: list[Page]
     metadata: dict = field(default_factory=dict)
+    cover_lines: list[str] = field(default_factory=list)  # raw lines of page 1, for the title
 
     @property
     def page_count(self) -> int:

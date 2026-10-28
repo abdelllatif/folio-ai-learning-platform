@@ -6,28 +6,74 @@ document, so the "answer only from the document" promise holds even offline.
 import random
 import re
 
-from .textproc import extract_keywords, first_heading, rank_sentences, split_sentences, truncate
+from .textproc import (
+    STRUCTURE_WORDS,
+    extract_keywords,
+    first_heading,
+    is_noise_sentence,
+    rank_sentences,
+    split_sentences,
+    truncate,
+)
 from .types import FlashcardDraft, QuestionDraft, ScoredChunk
 
 DEFINITION_PATTERNS = [
     re.compile(r"^(?:on appelle|on nomme)\s+(?P<term>[^,]{2,60}?)\s+(?P<def>.{15,})$", re.I),
     re.compile(r"^(?P<term>[A-ZÀ-Ý][\w\s'’-]{1,60}?)\s*(?::|—|-)\s+(?P<def>.{15,})$"),
-    re.compile(r"^(?:l[ae']\s?|les\s|un\s|une\s)?(?P<term>[\w'’-]+(?:\s[\w'’-]+){0,4})\s+"
+    re.compile(r"^(?:les\s|l[ae]\s|l['’]|un\s|une\s|des\s)?(?P<term>[\w'’-]+(?:\s[\w'’-]+){0,4})\s+"
                r"(?:est|sont|désigne|désignent|correspond à|se définit comme|"
                r"is|are|refers to|means)\s+(?P<def>.{15,})$", re.I),
 ]
 HEADING_WORDS = re.compile(r"^(chapitre|chapter|partie|part|section|annexe|module|leçon)\b|^\d", re.I)
+BAD_TERM_START = {
+    "ce", "ces", "cet", "cette", "cela", "il", "elle", "on", "ils", "elles", "mes", "tes", "ses",
+    "nos", "vos", "leur", "leurs", "notre", "votre", "chaque", "tout", "toute", "tous", "nous",
+    "vous", "je", "this", "these", "it", "a", "à", "s", "l", "d",
+}
+LEADING_ARTICLE = re.compile(r"^(les|le|la|l['’]|un|une|des|the|an?)\s*", re.I)
+
+
+def _good_term(term: str) -> bool:
+    words = term.lower().split()
+    letters = sum(c.isalpha() for c in term)
+    return (letters >= 3 and words[0] not in BAD_TERM_START and words[0] not in STRUCTURE_WORDS
+            and not term.isupper())
+
+
 TF_LABELS = {"fr": ["Vrai", "Faux"], "en": ["True", "False"], "ar": ["صحيح", "خطأ"]}
 
 
-def guess_title(text: str, metadata: dict, filename: str) -> str:
+def _title_from_cover(cover_lines: list[str], keywords: list[str]) -> str | None:
+    """Pick the cover line that best names the subject: short, not a date or a label,
+    and sharing words with the document's keywords."""
+    kw = {w for k in keywords for w in k.split()}
+    best, best_score = None, 0.0
+    for line in cover_lines:
+        words = line.split()
+        if not 2 <= len(words) <= 14 or len(line) > 120 or re.fullmatch(r"[\d\s/–-]+", line):
+            continue
+        tokens = {w.lower().strip(".,:;–-") for w in words}
+        hits = len(tokens & kw)
+        if not hits:
+            continue
+        score = hits + (0.5 if len(words) <= 8 else 0)
+        if score > best_score:
+            best, best_score = line.strip(" -–•"), score
+    return best
+
+
+def guess_title(text: str, metadata: dict, filename: str,
+                cover_lines: list[str] | None = None, keywords: list[str] | None = None) -> str:
     lowered = {str(k).lower().lstrip("/"): v for k, v in (metadata or {}).items()}
     meta_title = str(lowered.get("title") or "").strip()
     if 3 <= len(meta_title) <= 150 and not meta_title.lower().endswith((".doc", ".docx",
                                                                         ".pdf", ".ppt")):
         return meta_title
+    from_cover = _title_from_cover(cover_lines or [], keywords or [])
+    if from_cover:
+        return from_cover
     heading = first_heading(text)
-    if heading:
+    if heading and len(heading.split()) <= 12:
         return heading
     stem = re.sub(r"[_\-]+", " ", filename.rsplit(".", 1)[0]).strip()
     return stem.capitalize() or "Document sans titre"
@@ -45,23 +91,50 @@ def key_points(text: str, lang: str, limit: int = 8) -> list[str]:
     return rank_sentences(text, lang, limit=limit, max_words=35)
 
 
+STRONG_DEF = re.compile(r"\b(est|sont)\s+(donc\s+)?défini(e|s|es)?\b|\bdésigne|\bse définit"
+                        r"|\bon (appelle|nomme)|\bcorrespond à|\brefers to|\bis defined", re.I)
+# « X est donc la… » defines; « X est donc à retenir / est de décrire / est dû » does not
+COPULA_TAIL = re.compile(r"\b(est|sont|is|are)\s+(?:donc\s+|ainsi\s+|alors\s+)?(?P<next>[\w'’]+)",
+                         re.I)
+DEFINING_NEXT = {"le", "la", "les", "l", "un", "une", "des", "l'", "l’", "constitué", "constituée",
+                 "composé", "composée", "formé", "formée", "appelé", "appelée", "a", "an", "the"}
+DISCURSIVE = re.compile(r"\b(ici|nous|vous|je|cours|chapitre|diapo)\b", re.I)
+
+
+def _definition_score(sentence: str) -> int:
+    if STRONG_DEF.search(sentence):
+        return 3
+    m = COPULA_TAIL.search(sentence)
+    if m:
+        nxt = m.group("next").lower()
+        nxt = "l" if nxt.startswith(("l'", "l’")) else nxt
+        return 2 if nxt in DEFINING_NEXT else 0
+    return 1  # « Terme : définition » form
+
+
 def glossary(text: str, limit: int = 15) -> list[dict]:
-    found, seen = [], set()
-    for sentence in split_sentences(text):
+    """Definitions found in the text; when a term is defined twice the clearest one wins."""
+    best: dict[str, tuple[int, int, str, str]] = {}  # key → (score, order, term, sentence)
+    for order, sentence in enumerate(split_sentences(text)):
+        sentence = sentence.strip()
+        if is_noise_sentence(sentence) or DISCURSIVE.search(sentence):
+            continue
         for pattern in DEFINITION_PATTERNS:
-            m = pattern.match(sentence.strip())
+            m = pattern.match(sentence)
             if not m:
                 continue
-            term = m.group("term").strip(" ,:;'’").strip()
-            if not (2 <= len(term) <= 60) or term.lower() in seen or len(term.split()) > 5 \
-                    or HEADING_WORDS.match(term):
+            term = LEADING_ARTICLE.sub("", m.group("term").strip(" ,:;'’").strip())
+            if len(m.group("def").split()) < 5 or not (2 <= len(term) <= 60) \
+                    or len(term.split()) > 5 or HEADING_WORDS.match(term) or not _good_term(term):
                 continue
-            seen.add(term.lower())
-            found.append({"term": term[:1].upper() + term[1:], "definition": sentence.strip()})
+            score = _definition_score(sentence)
+            key = term.lower()
+            if score and (key not in best or score > best[key][0]):
+                best[key] = (score, best.get(key, (0, order))[1], term, sentence)
             break
-        if len(found) >= limit:
-            break
-    return found
+    ranked = sorted(best.values(), key=lambda x: (-x[0], x[1]))[:limit]
+    return [{"term": t[:1].upper() + t[1:], "definition": s}
+            for _, _, t, s in sorted(ranked, key=lambda x: x[1])]
 
 
 def faq(gloss: list[dict], points: list[str], lang: str) -> list[dict]:

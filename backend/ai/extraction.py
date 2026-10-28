@@ -103,6 +103,7 @@ def extract_pdf(path: str, ocr_enabled: bool = True, ocr_languages: str = "fra+e
     if not pages:
         raise ExtractionError("Le PDF ne contient aucune page.")
 
+    cover = [ln.strip() for ln in pages[0].text.splitlines() if ln.strip()][:40]
     cleaned = strip_repeated_lines([p.text for p in pages])
     for page, text in zip(pages, cleaned):
         page.text = clean_text(text)
@@ -112,4 +113,4 @@ def extract_pdf(path: str, ocr_enabled: bool = True, ocr_languages: str = "fra+e
             "Aucun texte trouvé. Le PDF est peut-être scanné : activez l'OCR ou "
             "déposez une version texte."
         )
-    return ExtractedDocument(pages=pages, metadata=meta)
+    return ExtractedDocument(pages=pages, metadata=meta, cover_lines=cover)

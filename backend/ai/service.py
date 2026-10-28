@@ -65,7 +65,8 @@ class StudyAI:
         return self.embedder.embed(texts)
 
     # ------------------------------------------------------------------ analysis
-    def analyze(self, text: str, metadata: dict, filename: str) -> Analysis:
+    def analyze(self, text: str, metadata: dict, filename: str,
+                cover_lines: list[str] | None = None) -> Analysis:
         lang = detect_language(text)
         lang_label = prompts.lang_name(lang)
         try:
@@ -82,7 +83,8 @@ class StudyAI:
             category = str(data.get("category", "Cours")).strip().capitalize()
             return Analysis(
                 title=truncate(str(data.get("title") or "").strip(), 150)
-                or fallback.guess_title(text, metadata, filename),
+                or fallback.guess_title(text, metadata, filename, cover_lines,
+                                        extract_keywords(text, lang)),
                 short_summary=str(data.get("short_summary", "")).strip(),
                 summary=str(data.get("summary", "")).strip(),
                 explanation=explanation,
@@ -100,18 +102,19 @@ class StudyAI:
             )
         except (LLMUnavailable, ValueError, AttributeError) as exc:
             logger.info("Analysis falling back to extractive mode: %s", exc)
-            return self._analyze_extractive(text, metadata, filename, lang)
+            return self._analyze_extractive(text, metadata, filename, lang, cover_lines)
 
-    def _analyze_extractive(self, text, metadata, filename, lang) -> Analysis:
+    def _analyze_extractive(self, text, metadata, filename, lang, cover_lines=None) -> Analysis:
         summary = fallback.summarize(text, lang)
         points = fallback.key_points(text, lang)
         gloss = fallback.glossary(text)
+        keywords = extract_keywords(text, lang)
         return Analysis(
-            title=fallback.guess_title(text, metadata, filename),
+            title=fallback.guess_title(text, metadata, filename, cover_lines, keywords),
             short_summary=truncate(summary.split("\n\n")[0], 320),
             summary=summary, key_points=points,
             explanation=fallback.explanation(summary, points, gloss, lang),
-            keywords=extract_keywords(text, lang), glossary=gloss,
+            keywords=keywords, glossary=gloss,
             faq=fallback.faq(gloss, points, lang),
             subject=metadata.get("subject", "")[:80], level="", category="Cours",
             language=lang, generated_by="extractive",

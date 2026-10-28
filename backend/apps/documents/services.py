@@ -76,7 +76,8 @@ def process_document(document_id: int) -> None:
 
         _step(document, 65, "Génération du résumé et des fiches")
         full_text = extracted.full_text
-        analysis = ai.study.analyze(full_text, extracted.metadata, document.original_filename)
+        analysis = ai.study.analyze(full_text, extracted.metadata, document.original_filename,
+                                    extracted.cover_lines)
 
         with transaction.atomic():
             DocumentPage.objects.filter(document=document).delete()
