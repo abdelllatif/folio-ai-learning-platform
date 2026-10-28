@@ -261,11 +261,12 @@ a.list-row:hover .list-row__title { color: var(--blue); }
 
 /* progress */
 .heatmap { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 13px); gap: 3px; overflow-x: auto; padding-bottom: 0.25rem; }
-.heatmap span { width: 13px; height: 13px; border-radius: 3px; background: var(--surface-2); }
-.heatmap span[data-l='1'] { background: color-mix(in srgb, var(--mint) 30%, var(--surface-2)); }
-.heatmap span[data-l='2'] { background: color-mix(in srgb, var(--mint) 55%, var(--surface-2)); }
-.heatmap span[data-l='3'] { background: color-mix(in srgb, var(--mint) 80%, var(--surface-2)); }
-.heatmap span[data-l='4'] { background: var(--mint); }
+.heatmap span, .heat-legend span { width: 13px; height: 13px; border-radius: 3px; background: var(--surface-2); }
+.heat-legend { display: inline-flex; gap: 3px; align-items: center; }
+.heatmap span[data-l='1'], .heat-legend span[data-l='1'] { background: color-mix(in srgb, var(--mint) 30%, var(--surface-2)); }
+.heatmap span[data-l='2'], .heat-legend span[data-l='2'] { background: color-mix(in srgb, var(--mint) 55%, var(--surface-2)); }
+.heatmap span[data-l='3'], .heat-legend span[data-l='3'] { background: color-mix(in srgb, var(--mint) 80%, var(--surface-2)); }
+.heatmap span[data-l='4'], .heat-legend span[data-l='4'] { background: var(--mint); }
 .badges { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 0.75rem; }
 .badge-card { display: flex; gap: 0.7rem; align-items: center; padding: 0.8rem; border-radius: var(--r-md); border: 1px solid var(--line); background: var(--surface); }
 .badge-card__ico { width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; background: var(--highlight-soft); color: var(--amber); flex: none; }
@@ -309,3 +310,7 @@ a.list-row:hover .list-row__title { color: var(--blue); }
   .grades { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .msg { max-width: 92%; }
 }
+
+/* forms placed in narrow side columns stack in one column */
+aside .form-grid { grid-template-columns: minmax(0, 1fr); }
+aside .form-grid .span-2 { grid-column: auto; }
