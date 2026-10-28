@@ -7,11 +7,11 @@
 .hero__note { margin-top: 1rem; font-size: var(--fs-sm); color: var(--ink-3); }
 
 /* the page-with-margin-notes product preview */
-.desk { position: relative; padding: 1rem 0 1rem 1rem; }
+.desk { position: relative; padding: 3.5rem 0 5.5rem 0; }
 .desk__page {
   background: var(--surface); border: 1px solid var(--line); border-radius: 4px var(--r-lg) var(--r-lg) 4px;
   box-shadow: var(--shadow-2); padding: 1.6rem 1.6rem 1.6rem 2.6rem; position: relative; font-family: var(--font-read);
-  font-size: 0.95rem; line-height: 1.75; color: var(--ink-2); transform: rotate(-1deg);
+  font-size: 0.95rem; line-height: 1.75; color: var(--ink-2); transform: rotate(-1deg); margin: 0 1.5rem 0 2.5rem;
 }
 .desk__page::before { content: ''; position: absolute; left: 1.6rem; top: 0; bottom: 0; border-left: 1px solid var(--coral); opacity: 0.35; }
 .desk__page h4 { font-family: var(--font-ui); color: var(--ink); font-size: var(--fs-md); margin-bottom: 0.6rem; }
@@ -22,8 +22,8 @@
 }
 .desk__note b { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; margin-bottom: 0.3rem; color: var(--ink); }
 .desk__note b svg { width: 15px; height: 15px; color: var(--blue); }
-.desk__note--1 { right: -1.5rem; top: -1rem; }
-.desk__note--2 { left: -2.5rem; bottom: 1.5rem; }
+.desk__note--1 { right: 0; top: 0; }
+.desk__note--2 { left: 0; bottom: 0; }
 .desk__choice { display: flex; gap: 0.4rem; align-items: center; margin-top: 0.3rem; color: var(--ink-2); }
 .desk__choice.ok { color: var(--mint); font-weight: 500; }
 
@@ -283,7 +283,6 @@ a.list-row:hover .list-row__title { color: var(--blue); }
 @media (max-width: 900px) {
   .hero__grid, .proof { grid-template-columns: minmax(0, 1fr); }
   .desk { margin: 1rem 1.5rem 0; }
-  .desk__note--2 { left: -1rem; }
   .steps, .feature-cols, .plans { grid-template-columns: minmax(0, 1fr); }
   .audience { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .audience > div:nth-child(3) { border-left: 0; }
@@ -301,6 +300,7 @@ a.list-row:hover .list-row__title { color: var(--blue); }
 @media (max-width: 600px) {
   .desk__note { position: static; width: auto; margin-top: 0.75rem; }
   .desk { padding: 0; margin: 1rem 0 0; }
+  .desk__page { margin: 0; }
   .audience { grid-template-columns: minmax(0, 1fr); }
   .audience > div + div { border-left: 0; border-top: 1px solid var(--line); }
   .form-grid { grid-template-columns: minmax(0, 1fr); }

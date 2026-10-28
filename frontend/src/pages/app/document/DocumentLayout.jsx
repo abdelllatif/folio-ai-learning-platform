@@ -116,7 +116,7 @@ export function DocumentLayout() {
           <div className="doc-meta">
             <StatusBadge status={doc.status} progress={doc.progress} />
             {doc.subject && <span className="row" style={{ gap: 6 }}><span className="dot" style={{ background: doc.subject.color }} />{doc.subject.name}</span>}
-            {doc.page_count > 0 && <span>{doc.page_count} pages</span>}
+            {doc.page_count > 0 && <span>{doc.subject ? '· ' : ''}{doc.page_count} pages</span>}
             {doc.reading_minutes > 0 && <span>· {doc.reading_minutes} min de lecture</span>}
             {doc.language && <span>· {LANGUAGES[doc.language]}</span>}
             {doc.generated_by === 'extractive' && (
