@@ -24,3 +24,4 @@ torch>=2.3
 # --- Dev / tests ---
 pytest>=8.3
 pytest-django>=4.9
+reportlab>=4.2  # PDF fixtures in tests
