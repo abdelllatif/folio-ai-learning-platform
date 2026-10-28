@@ -43,6 +43,7 @@ services:
       POSTGRES_PASSWORD: folio
       OLLAMA_BASE_URL: http://ollama:11434
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b}
+      OLLAMA_TIMEOUT: ${OLLAMA_TIMEOUT:-600}
       SEED_DEMO: ${SEED_DEMO:-1}
       SECURE_COOKIES: "0"
     volumes:

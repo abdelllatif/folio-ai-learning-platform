@@ -168,7 +168,7 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", "Folio <no-reply@folio.ma>")
 FOLIO_AI = {
     "OLLAMA_BASE_URL": env("OLLAMA_BASE_URL", "http://localhost:11434"),
     "OLLAMA_MODEL": env("OLLAMA_MODEL", "qwen2.5:7b"),
-    "OLLAMA_TIMEOUT": int(env("OLLAMA_TIMEOUT", 180)),
+    "OLLAMA_TIMEOUT": int(env("OLLAMA_TIMEOUT", 600)),
     "EMBEDDING_MODEL": env(
         "EMBEDDING_MODEL", "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
     ),
