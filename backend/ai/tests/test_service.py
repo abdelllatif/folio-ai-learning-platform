@@ -100,3 +100,11 @@ def test_offline_quiz_and_flashcards(course_text):
     cards, src = ai.generate_flashcards(passages, 6, "fr", analysis.glossary,
                                         analysis.key_points)
     assert src == "extractive" and cards and cards[0].back
+
+
+def test_title_from_capitalised_pdf_metadata_and_no_heading_terms():
+    from ai import fallback
+
+    assert fallback.guess_title("x", {"Title": "Cours de réseaux"}, "a.pdf") == "Cours de réseaux"
+    text = "Chapitre 1 — Le modèle\n\nUne clé primaire est un attribut qui identifie chaque ligne."
+    assert [g["term"] for g in fallback.glossary(text)] == ["Clé primaire"]

@@ -66,3 +66,8 @@ def test_parse_json_loose(raw):
 def test_parse_json_loose_raises():
     with pytest.raises(ValueError):
         parse_json_loose("pas de json ici")
+
+
+def test_headings_stay_separate_from_body():
+    raw = "Chapitre 2 — La normalisation\nLa normalisation réduit\nla redondance."
+    assert clean_text(raw) == "Chapitre 2 — La normalisation\n\nLa normalisation réduit la redondance."

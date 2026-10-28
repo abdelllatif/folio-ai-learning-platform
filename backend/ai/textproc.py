@@ -31,9 +31,17 @@ def normalize(text: str) -> str:
     return unicodedata.normalize("NFKC", text or "")
 
 
+HEADING_RE = re.compile(
+    r"^\s*((chapitre|chapter|partie|part|section|annexe|leçon|lesson|module|thème)\b.{0,80}"
+    r"|\d+(\.\d+)*\.?\s+[A-ZÀ-Ý].{0,80}|[IVX]+\.\s+.{1,80})$", re.I)
+
+
 def clean_text(text: str) -> str:
     """Repair common PDF extraction artefacts without destroying paragraphs."""
     text = normalize(text).replace("­", "")  # soft hyphens
+    # keep headings on their own paragraph so they are not glued to the next sentence
+    text = "\n".join(f"\n{ln}\n" if HEADING_RE.match(ln) and not ln.rstrip().endswith((".", ","))
+                     else ln for ln in text.split("\n"))
     text = re.sub(r"(\w)-\n(\w)", r"\1\2", text)  # words broken across lines
     text = re.sub(r"[ \t ]+", " ", text)
     text = re.sub(r" *\n *", "\n", text)

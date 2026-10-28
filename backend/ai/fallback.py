@@ -16,11 +16,13 @@ DEFINITION_PATTERNS = [
                r"(?:est|sont|désigne|désignent|correspond à|se définit comme|"
                r"is|are|refers to|means)\s+(?P<def>.{15,})$", re.I),
 ]
+HEADING_WORDS = re.compile(r"^(chapitre|chapter|partie|part|section|annexe|module|leçon)\b|^\d", re.I)
 TF_LABELS = {"fr": ["Vrai", "Faux"], "en": ["True", "False"], "ar": ["صحيح", "خطأ"]}
 
 
 def guess_title(text: str, metadata: dict, filename: str) -> str:
-    meta_title = (metadata.get("title") or "").strip()
+    lowered = {str(k).lower().lstrip("/"): v for k, v in (metadata or {}).items()}
+    meta_title = str(lowered.get("title") or "").strip()
     if 3 <= len(meta_title) <= 150 and not meta_title.lower().endswith((".doc", ".docx",
                                                                         ".pdf", ".ppt")):
         return meta_title
@@ -51,7 +53,8 @@ def glossary(text: str, limit: int = 15) -> list[dict]:
             if not m:
                 continue
             term = m.group("term").strip(" ,:;'’").strip()
-            if not (2 <= len(term) <= 60) or term.lower() in seen or len(term.split()) > 5:
+            if not (2 <= len(term) <= 60) or term.lower() in seen or len(term.split()) > 5 \
+                    or HEADING_WORDS.match(term):
                 continue
             seen.add(term.lower())
             found.append({"term": term[:1].upper() + term[1:], "definition": sentence.strip()})
