@@ -20,7 +20,7 @@ export const Button = forwardRef(function Button(
       {IconRight && !loading && <IconRight aria-hidden />}
     </>
   )
-  if (to) return <Link ref={ref} to={to} className={cls} {...rest}>{content}</Link>
+  if (to && !rest.disabled) return <Link ref={ref} to={to} className={cls} {...rest}>{content}</Link>
   return (
     <button ref={ref} type="button" className={cls} disabled={loading || rest.disabled} {...rest}>
       {content}
