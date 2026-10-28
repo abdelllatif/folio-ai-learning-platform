@@ -1,6 +1,6 @@
 """Test settings: SQLite in memory, inline tasks, light AI adapters (no network, no torch)."""
 from .base import *  # noqa: F401,F403
-from .base import FOLIO_AI, REST_FRAMEWORK
+from .base import BASE_DIR, FOLIO_AI, REST_FRAMEWORK
 
 DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
