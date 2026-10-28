@@ -115,7 +115,7 @@ class StudyAI:
             summary=summary, key_points=points,
             explanation=fallback.explanation(summary, points, gloss, lang),
             keywords=keywords, glossary=gloss,
-            faq=fallback.faq(gloss, points, lang),
+            faq=fallback.faq(gloss, points, lang, text, keywords),
             subject=metadata.get("subject", "")[:80], level="", category="Cours",
             language=lang, generated_by="extractive",
         )

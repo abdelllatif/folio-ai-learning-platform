@@ -108,3 +108,12 @@ def test_title_from_capitalised_pdf_metadata_and_no_heading_terms():
     assert fallback.guess_title("x", {"Title": "Cours de réseaux"}, "a.pdf") == "Cours de réseaux"
     text = "Chapitre 1 — Le modèle\n\nUne clé primaire est un attribut qui identifie chaque ligne."
     assert [g["term"] for g in fallback.glossary(text)] == ["Clé primaire"]
+
+
+def test_offline_faq_covers_topics_beyond_definitions(course_text):
+    ai = StudyAI(OfflineLLM(), HashingEmbedder())
+    faq = ai.analyze(course_text, {}, "x.pdf").faq
+    questions = [f["question"] for f in faq]
+    assert any(q.startswith("Que désigne") for q in questions)
+    assert any(q.startswith("Que faut-il retenir sur") for q in questions)
+    assert len(questions) == len(set(questions)) and all(f["answer"] for f in faq)

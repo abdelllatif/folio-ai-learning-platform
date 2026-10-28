@@ -98,6 +98,10 @@ COPULA_TAIL = re.compile(r"\b(est|sont|is|are)\s+(?:donc\s+|ainsi\s+|alors\s+)?(
                          re.I)
 DEFINING_NEXT = {"le", "la", "les", "l", "un", "une", "des", "l'", "l’", "constitué", "constituée",
                  "composé", "composée", "formé", "formée", "appelé", "appelée", "a", "an", "the"}
+# French/English adjective endings: « cellulaire », « plasmique » make poor FAQ topics
+ADJECTIVE_END = re.compile(r"(aire|ique|elle|ale|aux|eux|euse|ive|if|able|ible|ical|ous|ful)$", re.I)
+FIGURE_REF = re.compile(r"\b(couleur|schéma|figure|ci-dessus|ci-dessous|dessin|représenté|"
+                        r"en rouge|en bleu|en vert|en gris|tableau suivant|shown|figure)\b", re.I)
 DISCURSIVE = re.compile(r"\b(ici|nous|vous|je|cours|chapitre|diapo)\b", re.I)
 
 
@@ -117,7 +121,7 @@ def glossary(text: str, limit: int = 15) -> list[dict]:
     best: dict[str, tuple[int, int, str, str]] = {}  # key → (score, order, term, sentence)
     for order, sentence in enumerate(split_sentences(text)):
         sentence = sentence.strip()
-        if is_noise_sentence(sentence) or DISCURSIVE.search(sentence):
+        if is_noise_sentence(sentence) or DISCURSIVE.search(sentence) or FIGURE_REF.search(sentence):
             continue
         for pattern in DEFINITION_PATTERNS:
             m = pattern.match(sentence)
@@ -128,7 +132,7 @@ def glossary(text: str, limit: int = 15) -> list[dict]:
                     or len(term.split()) > 5 or HEADING_WORDS.match(term) or not _good_term(term):
                 continue
             score = _definition_score(sentence)
-            key = term.lower()
+            key = re.split(r"\s+(ou|or|=)\s+", term.lower())[0]  # « cytosol ou hyaloplasme » → cytosol
             if score and (key not in best or score > best[key][0]):
                 best[key] = (score, best.get(key, (0, order))[1], term, sentence)
             break
@@ -137,14 +141,39 @@ def glossary(text: str, limit: int = 15) -> list[dict]:
             for _, _, t, s in sorted(ranked, key=lambda x: x[1])]
 
 
-def faq(gloss: list[dict], points: list[str], lang: str) -> list[dict]:
-    q_tpl = {"fr": "Que désigne « {t} » ?", "en": "What does “{t}” mean?",
-             "ar": "ماذا يعني «{t}»؟"}
-    items = [{"question": q_tpl.get(lang, q_tpl["fr"]).format(t=g["term"].lower()),
-              "answer": g["definition"]} for g in gloss[:8]]
-    if len(items) < 4:
-        label = {"fr": "Que faut-il retenir ?", "en": "What should I remember?",
-                 "ar": "ماذا يجب أن أتذكر؟"}.get(lang, "Que faut-il retenir ?")
+def _topic_sentences(text: str, keyword: str, lang: str, used: set[str], limit: int = 2) -> str:
+    """The most informative course sentences that mention ``keyword``."""
+    pattern = re.compile(rf"\b{re.escape(keyword)}", re.I)
+    candidates = [s for s in rank_sentences(text, lang, limit=60, max_words=40)
+                  if pattern.search(s) and s not in used and not FIGURE_REF.search(s)]
+    picked = candidates[:limit]
+    used.update(picked)
+    return " ".join(picked)
+
+
+def faq(gloss: list[dict], points: list[str], lang: str, text: str = "",
+        keywords: list[str] | None = None, limit: int = 10) -> list[dict]:
+    """Definitions first (« Que désigne… »), then « Que faut-il retenir sur… » for the main
+    topics of the course, each answered with the document's own sentences."""
+    q_def = {"fr": "Que désigne « {t} » ?", "en": "What does “{t}” mean?", "ar": "ماذا يعني «{t}»؟"}
+    q_topic = {"fr": "Que faut-il retenir sur « {t} » ?", "en": "What should I know about “{t}”?",
+               "ar": "ماذا يجب أن أعرف عن «{t}»؟"}
+    items = [{"question": q_def.get(lang, q_def["fr"]).format(t=g["term"].lower()),
+              "answer": g["definition"]} for g in gloss[:6]]
+    used = {g["definition"] for g in gloss}
+    covered = {w for g in gloss for w in g["term"].lower().split()}
+    for kw in keywords or []:
+        if len(items) >= limit:
+            break
+        if kw.lower() in covered or len(kw) < 4 or (" " not in kw and ADJECTIVE_END.search(kw)):
+            continue
+        answer = _topic_sentences(text, kw, lang, used)
+        if answer:
+            items.append({"question": q_topic.get(lang, q_topic["fr"]).format(t=kw), "answer": answer})
+            covered.add(kw.lower())
+    if len(items) < 4 and points:
+        label = {"fr": "Que faut-il retenir de ce cours ?", "en": "What should I remember?",
+                 "ar": "ماذا يجب أن أتذكر؟"}.get(lang, "Que faut-il retenir de ce cours ?")
         items.append({"question": label, "answer": " ".join(points[:3])})
     return items
 
