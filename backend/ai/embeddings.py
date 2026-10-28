@@ -12,6 +12,8 @@ from typing import Protocol
 
 import numpy as np
 
+from .textproc import STOPWORDS
+
 logger = logging.getLogger("ai.embeddings")
 
 
@@ -32,14 +34,16 @@ def _normalize(matrix: np.ndarray) -> np.ndarray:
 class HashingEmbedder:
     min_score = 0.08
 
-    def __init__(self, dim: int = 512):
+    def __init__(self, dim: int = 2048):
         self.dim = dim
         self.name = f"hashing-{dim}"
 
     _token = re.compile(r"\w+", re.UNICODE)
+    _stop = STOPWORDS["fr"] | STOPWORDS["en"]
 
     def _features(self, text: str):
-        toks = [t.lower() for t in self._token.findall(text) if len(t) > 2]
+        toks = [t.lower() for t in self._token.findall(text)
+                if len(t) > 2 and t.lower() not in self._stop]
         # light stemming: share features between "réseau"/"réseaux", "model"/"models"
         toks = [t[:-1] if t.endswith(("s", "x")) and len(t) > 4 else t for t in toks]
         yield from toks
