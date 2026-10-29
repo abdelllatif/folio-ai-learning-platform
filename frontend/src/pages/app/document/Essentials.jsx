@@ -32,7 +32,19 @@ export function Essentials() {
         <h2 style={{ fontSize: 'var(--fs-md)', marginBottom: '0.5rem' }}>Glossaire</h2>
         {doc.glossary.length ? (
           <dl className="glossary">
-            {doc.glossary.map((g) => <div key={g.term}><dt>{g.term}</dt><dd>{g.definition}</dd></div>)}
+            {doc.glossary.map((g) => (
+              <div key={g.term}>
+                <dt>{g.term}</dt>
+                <dd>
+                  {g.in_course === false && (
+                    <span className="badge badge--amber glossary__badge"
+                      title="Cette définition vient des connaissances générales du modèle, pas du cours : vérifiez-la.">Définition générale</span>
+                  )}
+                  {g.definition}
+                  {g.excerpt && <p className="glossary__excerpt">Dans le cours : “{g.excerpt}”</p>}
+                </dd>
+              </div>
+            ))}
           </dl>
         ) : (
           <EmptyState title="Pas de définition repérée">Le document ne contient pas de définitions explicites.</EmptyState>

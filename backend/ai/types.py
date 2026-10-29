@@ -94,7 +94,7 @@ class Analysis:
     explanation: str
     key_points: list[str]
     keywords: list[str]
-    glossary: list[dict]  # [{"term", "definition"}]
+    glossary: list[dict]  # [{"term", "definition", "excerpt", "in_course"}]
     faq: list[dict]  # [{"question", "answer"}]
     subject: str
     level: str

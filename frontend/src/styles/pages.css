@@ -144,6 +144,8 @@ a.list-row:hover .list-row__title { color: var(--blue); }
 .glossary div { display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 1.25rem; padding: 0.85rem 0; border-bottom: 1px solid var(--line); }
 .glossary dt { font-weight: 600; }
 .glossary dd { margin: 0; color: var(--ink-2); font-family: var(--font-read); }
+.glossary__badge { margin-right: 0.5rem; font-family: var(--font-ui); vertical-align: 1px; }
+.glossary__excerpt { margin: 0.4rem 0 0; font-size: var(--fs-sm); color: var(--ink-3); font-style: italic; }
 .keyword-cloud { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 
 /* chat */

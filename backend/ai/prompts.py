@@ -49,10 +49,21 @@ DOCUMENT :
 
 STUDY_AIDS = """À partir du document, produis en {lang} un JSON valide :
 {{
-  "glossary": [{{"term": "...", "definition": "définition tirée du document"}}],
+  "glossary": [{{"term": "...", "definition": "ce que le document dit de ce terme"}}],
   "faq": [{{"question": "question qu'un étudiant se poserait", "answer": "réponse tirée du document"}}]
 }}
-8 à 15 termes de glossaire, 6 à 10 questions de FAQ. Aucune information extérieure.
+Glossaire (8 à 15 termes) :
+- uniquement des termes qui apparaissent tels quels dans le document ;
+- la définition reformule CE QUE LE COURS DIT du terme (son rôle, un exemple, une date,
+  un lieu cités dans le document) ;
+- n'ajoute JAMAIS une définition de manuel absente du document : si le cours emploie un
+  mot sans l'expliquer, décris seulement comment le cours l'utilise.
+FAQ (6 à 10 questions) :
+- garde les nuances et restrictions du cours (ex. « dans la Meseta occidentale »,
+  « au Dévonien supérieur ») au lieu de généraliser ;
+- ne regroupe pas sous une même étiquette des éléments que le cours distingue ;
+- reprends les chiffres et dates exactement comme le document les donne.
+Aucune information extérieure.
 
 DOCUMENT :
 \"\"\"{text}\"\"\""""

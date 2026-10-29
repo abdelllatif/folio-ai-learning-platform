@@ -10,6 +10,7 @@ import numpy as np
 
 from . import fallback, prompts
 from .embeddings import Embedder
+from .grounding import ground_glossary
 from .jsonutil import parse_json_loose
 from .llm import LLMClient, LLMUnavailable
 from .retrieval import search
@@ -91,8 +92,7 @@ class StudyAI:
                 key_points=[str(p) for p in data.get("key_points", [])][:12],
                 keywords=[str(k) for k in data.get("keywords", [])][:15]
                 or extract_keywords(text, lang),
-                glossary=[g for g in aids.get("glossary", [])
-                          if isinstance(g, dict) and g.get("term") and g.get("definition")][:20],
+                glossary=ground_glossary(aids.get("glossary", []), text)[:20],
                 faq=[f for f in aids.get("faq", [])
                      if isinstance(f, dict) and f.get("question") and f.get("answer")][:12],
                 subject=str(data.get("subject", "")).strip()[:80],
@@ -107,7 +107,8 @@ class StudyAI:
     def _analyze_extractive(self, text, metadata, filename, lang, cover_lines=None) -> Analysis:
         summary = fallback.summarize(text, lang)
         points = fallback.key_points(text, lang)
-        gloss = fallback.glossary(text)
+        # extractive definitions are document sentences: grounded by construction
+        gloss = [{**g, "excerpt": "", "in_course": True} for g in fallback.glossary(text)]
         keywords = extract_keywords(text, lang)
         return Analysis(
             title=fallback.guess_title(text, metadata, filename, cover_lines, keywords),

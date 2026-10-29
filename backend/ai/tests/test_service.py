@@ -110,6 +110,43 @@ def test_title_from_capitalised_pdf_metadata_and_no_heading_terms():
     assert [g["term"] for g in fallback.glossary(text)] == ["Clé primaire"]
 
 
+def test_llm_glossary_is_grounded_in_the_document(course_text):
+    analysis = {"title": "Bases de données", "summary": "…", "key_points": ["SQL"],
+                "category": "Cours"}
+    aids = {"glossary": [
+        {"term": "Clé primaire",
+         "definition": "Attribut qui identifie de façon unique chaque ligne d'une table."},
+        {"term": "Normalisation",
+         "definition": "Théorie mathématique inventée par Codd pour les algèbres abstraites."},
+        {"term": "Hachage", "definition": "Fonction qui transforme une clé en adresse."},
+    ], "faq": []}
+    llm = ScriptedLLM(json.dumps(analysis), "Explication.", json.dumps(aids))
+    result = StudyAI(llm, HashingEmbedder()).analyze(course_text, {}, "x.pdf")
+    assert result.generated_by == "llm"
+    by_term = {g["term"]: g for g in result.glossary}
+    assert set(by_term) == {"Clé primaire", "Normalisation"}  # Hachage is not in the course
+    assert by_term["Clé primaire"]["in_course"] is True
+    assert "identifie" in by_term["Clé primaire"]["excerpt"]
+    assert by_term["Normalisation"]["in_course"] is False
+    assert "normalisation" in by_term["Normalisation"]["excerpt"].lower()
+
+
+def test_grounding_matches_plurals_and_accents():
+    from ai.grounding import ground_glossary
+
+    text = "Les plis affectent les schistes. L'orogenèse hercynienne déforme la Meseta."
+    out = ground_glossary([{"term": "Pli", "definition": "déformation des schistes"},
+                           {"term": "Schiste", "definition": "roche affectée par les plis"},
+                           {"term": "Orogénèse", "definition": "déforme la Meseta"}], text)
+    assert [g["term"] for g in out] == ["Pli", "Schiste", "Orogénèse"]
+    assert all(g["in_course"] for g in out)
+
+
+def test_offline_glossary_is_marked_in_course(course_text):
+    glossary = StudyAI(OfflineLLM(), HashingEmbedder()).analyze(course_text, {}, "x.pdf").glossary
+    assert glossary and all(g["in_course"] is True and g["excerpt"] == "" for g in glossary)
+
+
 def test_offline_faq_covers_topics_beyond_definitions(course_text):
     ai = StudyAI(OfflineLLM(), HashingEmbedder())
     faq = ai.analyze(course_text, {}, "x.pdf").faq
